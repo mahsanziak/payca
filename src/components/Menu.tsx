@@ -1,7 +1,8 @@
-// src/components/Menu.tsx
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { Link as ScrollLink, Element } from 'react-scroll';
+import CartSidebar from './CartSidebar';
+import { useCart } from '../context/CartContext';
 
 type MenuItem = {
   id: string;
@@ -23,18 +24,17 @@ const Menu: React.FC<{ menuId: string }> = ({ menuId }) => {
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>('All');
+  const { addToCart, openCart } = useCart();
 
   useEffect(() => {
     const fetchMenuData = async () => {
       if (!menuId) return;
 
-      // Fetch menu items
       const { data: itemsData, error: itemsError } = await supabase
         .from('menu_items')
         .select('*')
         .eq('menu_id', menuId);
 
-      // Fetch menu categories
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('menu_categories')
         .select('*')
@@ -52,11 +52,21 @@ const Menu: React.FC<{ menuId: string }> = ({ menuId }) => {
     fetchMenuData();
   }, [menuId]);
 
-  if (loading) return <p>Loading...</p>;
-
   const handleCategoryClick = (categoryId: string) => {
     setActiveCategory(categoryId);
   };
+
+  const handleAddToCart = (item: MenuItem) => {
+    addToCart({
+      menu_item_id: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: 1,
+    });
+    openCart();
+  };
+
+  if (loading) return <p>Loading...</p>;
 
   return (
     <div className="bg-gray-50 font-roboto">
@@ -90,24 +100,33 @@ const Menu: React.FC<{ menuId: string }> = ({ menuId }) => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {menuItems.filter(item => item.category_id === category.id).map(item => (
-                <div key={item.id} className="flex items-center">
+                <div key={item.id} className="flex items-center bg-white shadow-md rounded-lg p-4">
                   <img
                     src={item.image_url || 'https://placehold.co/100x100'}
                     alt={item.name}
                     className="rounded-full w-24 h-24 object-cover mr-4"
                   />
-                  <div>
-                    <h3 className="text-lg">
-                      {item.name} <span className="text-md"><b>${item.price.toFixed(2)}</b></span>
+                  <div className="flex flex-col flex-grow">
+                    <h3 className="text-lg font-semibold">
+                      {item.name} <span className="text-md font-bold text-green-600">${item.price.toFixed(2)}</span>
                     </h3>
-                    <p className="text-sm">{item.description}</p>
+                    <p className="text-sm text-gray-600">{item.description}</p>
                   </div>
+                  <button
+                    onClick={() => handleAddToCart(item)}
+                    className="ml-4 p-2 bg-blue-500 text-white rounded-full shadow-md hover:bg-blue-600 transition"
+                    aria-label="Add to Cart"
+                  >
+                    <i className="fas fa-plus"></i>
+                  </button>
                 </div>
               ))}
             </div>
           </Element>
         ))}
       </div>
+
+      <CartSidebar />
     </div>
   );
 };

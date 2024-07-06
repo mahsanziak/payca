@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../../../utils/supabaseClient';
 import Menu from '../../../../components/Menu';
 import Loading from '../../../../components/Loading';
+import { CartProvider } from '../../../../context/CartContext'; // Ensure correct import
 
 const TableMenu: React.FC = () => {
   const router = useRouter();
@@ -42,22 +43,20 @@ const TableMenu: React.FC = () => {
     if (restaurantId) {
       fetchMenuId();
     }
-  }, [restaurantId]);
+  }, [restaurantId, tableId]);
 
   if (loading) return <Loading restaurantName={restaurantName || 'Loading...'} />;
   if (!menuId) return <p>No menu found for this restaurant.</p>;
 
   return (
-    <div>
-
+    <CartProvider tableId={tableId as string}>
       <main className="container mx-auto py-8 px-6">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold">{restaurantName}</h1>
+          <h1 className="text-7xl font-bold">{restaurantName}</h1>
         </div>
-
-        <Menu menuId={menuId} />
+        <Menu menuId={menuId} tableId={tableId as string} />
       </main>
-    </div>
+    </CartProvider>
   );
 };
 
