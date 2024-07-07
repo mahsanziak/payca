@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type CartItem = {
   id: string;
-  menu_item_id: string;  // Add menu_item_id here
+  menu_item_id: string;
   name: string;
   price: number;
   quantity: number;
@@ -22,26 +22,26 @@ type CartContextType = {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC = ({ children }) => {
-  const [cart, updateCart] = useState<CartItem[]>([]);
+  const [cart, setCartState] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
   const addToCart = (item: Omit<CartItem, 'id'>) => {
-    updateCart((prevCart) => [
+    setCartState((prevCart) => [
       ...prevCart,
       { ...item, id: `${item.menu_item_id}-${Date.now()}` },
     ]);
   };
 
   const removeFromCart = (id: string) => {
-    updateCart((prevCart) => prevCart.filter((item) => item.id !== id));
+    setCartState((prevCart) => prevCart.filter((item) => item.id !== id));
   };
 
   const clearCart = () => {
-    updateCart([]);
+    setCartState([]);
   };
 
   const setCart = (cart: CartItem[]) => {
-    updateCart(cart);
+    setCartState(cart);
   };
 
   const openCart = () => setIsOpen(true);
@@ -50,7 +50,7 @@ export const CartProvider: React.FC = ({ children }) => {
   useEffect(() => {
     const storedCart = localStorage.getItem('cart');
     if (storedCart) {
-      updateCart(JSON.parse(storedCart));
+      setCartState(JSON.parse(storedCart));
     }
   }, []);
 
