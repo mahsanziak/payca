@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type CartItem = {
-  id: string;
-  menu_item_id: string;
+  id: string; // Unique identifier for the cart item
+  menu_item_id: string; // Unique identifier for the menu item
   name: string;
   price: number;
   quantity: number;
