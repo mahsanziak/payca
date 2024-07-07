@@ -1,33 +1,56 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-interface CartItem {
+type CartItem = {
   id: string;
+  menu_item_id: string;  // Add menu_item_id here
   name: string;
   price: number;
   quantity: number;
-}
+};
 
-interface CartContextProps {
+type CartContextType = {
   cart: CartItem[];
-  addToCart: (item: CartItem) => void;
+  addToCart: (item: Omit<CartItem, 'id'>) => void;
   removeFromCart: (id: string) => void;
   clearCart: () => void;
+  setCart: (cart: CartItem[]) => void;
   isOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
-  setCart: (cart: CartItem[]) => void; // Add setCart to the context
-}
+};
 
-const CartContext = createContext<CartContextProps | undefined>(undefined);
+const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC = ({ children }) => {
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, updateCart] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+
+  const addToCart = (item: Omit<CartItem, 'id'>) => {
+    updateCart((prevCart) => [
+      ...prevCart,
+      { ...item, id: `${item.menu_item_id}-${Date.now()}` },
+    ]);
+  };
+
+  const removeFromCart = (id: string) => {
+    updateCart((prevCart) => prevCart.filter((item) => item.id !== id));
+  };
+
+  const clearCart = () => {
+    updateCart([]);
+  };
+
+  const setCart = (cart: CartItem[]) => {
+    updateCart(cart);
+  };
+
+  const openCart = () => setIsOpen(true);
+  const closeCart = () => setIsOpen(false);
 
   useEffect(() => {
     const storedCart = localStorage.getItem('cart');
     if (storedCart) {
-      setCart(JSON.parse(storedCart));
+      updateCart(JSON.parse(storedCart));
     }
   }, []);
 
@@ -35,23 +58,19 @@ export const CartProvider: React.FC = ({ children }) => {
     localStorage.setItem('cart', JSON.stringify(cart));
   }, [cart]);
 
-  const addToCart = (item: CartItem) => {
-    setCart((prevCart) => [...prevCart, item]);
-  };
-
-  const removeFromCart = (id: string) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== id));
-  };
-
-  const clearCart = () => {
-    setCart([]);
-  };
-
-  const openCart = () => setIsOpen(true);
-  const closeCart = () => setIsOpen(false);
-
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, isOpen, openCart, closeCart, setCart }}>
+    <CartContext.Provider
+      value={{
+        cart,
+        addToCart,
+        removeFromCart,
+        clearCart,
+        setCart,
+        isOpen,
+        openCart,
+        closeCart,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );

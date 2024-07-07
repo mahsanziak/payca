@@ -73,7 +73,7 @@ const Menu: React.FC<{ menuId: string }> = ({ menuId }) => {
       <div className="pattern-background">
         <div className="max-w-7xl mx-auto p-6">
           <div className="flex overflow-x-auto space-x-4 hide-scrollbar">
-            {categories.map(category => (
+            {categories.map((category) => (
               <ScrollLink
                 key={category.id}
                 to={category.name}
@@ -93,34 +93,42 @@ const Menu: React.FC<{ menuId: string }> = ({ menuId }) => {
       </div>
 
       <div className="max-w-7xl mx-auto p-6">
-        {categories.map(category => (
+        {categories.map((category) => (
           <Element key={category.id} name={category.name} className="mb-12">
             <div className="text-center mb-8">
               <h2 className="text-3xl">{category.name}</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {menuItems.filter(item => item.category_id === category.id).map(item => (
-                <div key={item.id} className="flex items-center bg-white shadow-md rounded-lg p-4">
-                  <img
-                    src={item.image_url || 'https://placehold.co/100x100'}
-                    alt={item.name}
-                    className="rounded-full w-24 h-24 object-cover mr-4"
-                  />
-                  <div className="flex flex-col flex-grow">
-                    <h3 className="text-lg font-semibold">
-                      {item.name} <span className="text-md font-bold text-green-600">${item.price.toFixed(2)}</span>
-                    </h3>
-                    <p className="text-sm text-gray-600">{item.description}</p>
-                  </div>
-                  <button
-                    onClick={() => handleAddToCart(item)}
-                    className="ml-4 p-2 bg-blue-500 text-white rounded-full shadow-md hover:bg-blue-600 transition"
-                    aria-label="Add to Cart"
+              {menuItems
+                .filter((item) => item.category_id === category.id)
+                .map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center bg-white shadow-md rounded-lg p-4"
                   >
-                    <i className="fas fa-plus"></i>
-                  </button>
-                </div>
-              ))}
+                    <img
+                      src={item.image_url || 'https://placehold.co/100x100'}
+                      alt={item.name}
+                      className="rounded-full w-24 h-24 object-cover mr-4"
+                    />
+                    <div className="flex flex-col flex-grow">
+                      <h3 className="text-lg font-semibold">
+                        {item.name}{' '}
+                        <span className="text-md font-bold text-green-600">
+                          ${item.price.toFixed(2)}
+                        </span>
+                      </h3>
+                      <p className="text-sm text-gray-600">{item.description}</p>
+                    </div>
+                    <button
+                      onClick={() => handleAddToCart(item)}
+                      className="ml-4 p-2 bg-blue-500 text-white rounded-full shadow-md hover:bg-blue-600 transition"
+                      aria-label="Add to Cart"
+                    >
+                      <i className="fas fa-plus"></i>
+                    </button>
+                  </div>
+                ))}
             </div>
           </Element>
         ))}
