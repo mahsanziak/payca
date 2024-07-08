@@ -2,36 +2,32 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2022-11-15',
+  apiVersion: '2024-06-20',  // Update this to the correct API version
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     try {
-      const { cartItems, successUrl, cancelUrl } = req.body;
-
-      const lineItems = cartItems.map((item: any) => ({
-        price_data: {
-          currency: 'cad',
-          product_data: {
-            name: item.name,
-          },
-          unit_amount: item.price * 100,
-        },
-        quantity: item.quantity,
-      }));
-
+      // Create Checkout Sessions from body params.
       const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'], // Include 'card' to support Apple Pay and Google Pay
-        line_items: lineItems,
+        payment_method_types: ['card'],
+        line_items: req.body.cartItems.map((item: any) => ({
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: item.name,
+            },
+            unit_amount: item.price * 100,
+          },
+          quantity: item.quantity,
+        })),
         mode: 'payment',
-        success_url: successUrl,
-        cancel_url: cancelUrl,
+        success_url: req.body.successUrl,
+        cancel_url: req.body.cancelUrl,
       });
-
       res.status(200).json({ id: session.id });
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: (err as Error).message });
     }
   } else {
     res.setHeader('Allow', 'POST');

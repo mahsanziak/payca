@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { Link as ScrollLink, Element } from 'react-scroll';
+import Image from 'next/image';
 import CartSidebar from './CartSidebar';
 import { useCart } from '../context/CartContext';
 
@@ -19,7 +20,14 @@ type MenuCategory = {
   name: string;
 };
 
-const Menu: React.FC<{ menuId: string }> = ({ menuId }) => {
+type MenuProps = {
+  menuId: string;
+  tableId: string;
+  isCartOpen: boolean;
+  onCloseCart: () => void;
+};
+
+const Menu: React.FC<MenuProps> = ({ menuId, tableId, isCartOpen, onCloseCart }) => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,9 +114,11 @@ const Menu: React.FC<{ menuId: string }> = ({ menuId }) => {
                     key={item.id}
                     className="flex items-center bg-white shadow-md rounded-lg p-4"
                   >
-                    <img
+                    <Image
                       src={item.image_url || 'https://placehold.co/100x100'}
                       alt={item.name}
+                      width={100}
+                      height={100}
                       className="rounded-full w-24 h-24 object-cover mr-4"
                     />
                     <div className="flex flex-col flex-grow">
@@ -134,7 +144,7 @@ const Menu: React.FC<{ menuId: string }> = ({ menuId }) => {
         ))}
       </div>
 
-      <CartSidebar />
+      <CartSidebar isOpen={isCartOpen} onClose={onCloseCart} />
     </div>
   );
 };

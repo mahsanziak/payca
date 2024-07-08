@@ -2,16 +2,17 @@ import React from 'react';
 import { useCart } from '../context/CartContext';
 import { useRouter } from 'next/router';
 
-const CartSidebar: React.FC = () => {
-  const { cart, isOpen, closeCart, removeFromCart } = useCart();
+type CartSidebarProps = {
+  isOpen: boolean;
+  onClose: () => void;
+};
+
+const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
+  const { cart, removeFromCart } = useCart();
   const router = useRouter();
-  const { restaurantId, tableId } = router.query;
 
   const handleProceedToPayment = () => {
-    router.push({
-      pathname: '/payment',
-      query: { restaurantId, tableId }
-    });
+    router.push('/payment');
   };
 
   return (
@@ -23,7 +24,7 @@ const CartSidebar: React.FC = () => {
       <div className="p-4">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-semibold">Your Cart</h2>
-          <button onClick={closeCart} className="text-gray-700 hover:text-gray-900">
+          <button onClick={onClose} className="text-gray-700 hover:text-gray-900">
             <i className="fas fa-times"></i>
           </button>
         </div>

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../../../utils/supabaseClient';
 import Menu from '../../../../components/Menu';
 import Loading from '../../../../components/Loading';
-import { CartProvider } from '../../../../context/CartContext'; // Ensure correct import
+import { CartProvider } from '../../../../context/CartContext';
 
 const TableMenu: React.FC = () => {
   const router = useRouter();
@@ -11,6 +11,7 @@ const TableMenu: React.FC = () => {
   const [menuId, setMenuId] = useState<string | null>(null);
   const [restaurantName, setRestaurantName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   useEffect(() => {
     const fetchMenuId = async () => {
@@ -43,7 +44,7 @@ const TableMenu: React.FC = () => {
     if (restaurantId) {
       fetchMenuId();
     }
-  }, [restaurantId, tableId]);
+  }, [restaurantId]);
 
   if (loading) return <Loading restaurantName={restaurantName || 'Loading...'} />;
   if (!menuId) return <p>No menu found for this restaurant.</p>;
@@ -54,7 +55,7 @@ const TableMenu: React.FC = () => {
         <div className="text-center mb-8">
           <h1 className="text-7xl font-bold">{restaurantName}</h1>
         </div>
-        <Menu menuId={menuId} tableId={tableId as string} />
+        <Menu menuId={menuId} tableId={tableId as string} isCartOpen={isCartOpen} onCloseCart={() => setIsCartOpen(false)} />
       </main>
     </CartProvider>
   );
