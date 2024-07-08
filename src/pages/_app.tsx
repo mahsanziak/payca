@@ -1,16 +1,19 @@
 import '../styles/globals.css';
 import type { AppProps } from 'next/app';
-import { AuthProvider } from '../context/AuthContext';
+import { Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
 import { CartProvider } from '../context/CartContext';
+import { AuthProvider } from '../context/AuthContext';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
 function MyApp({ Component, pageProps }: AppProps) {
-  // Extract tableId from pageProps or other sources as needed
-  const tableId = pageProps.tableId || '02c57c9d-e882-4350-8d1d-81ec2c5c0ba5'; // Replace with actual logic to obtain tableId
-
   return (
     <AuthProvider>
-      <CartProvider tableId={tableId}>
-        <Component {...pageProps} />
+      <CartProvider tableId={pageProps.tableId || ''}>
+        <Elements stripe={stripePromise}>
+          <Component {...pageProps} />
+        </Elements>
       </CartProvider>
     </AuthProvider>
   );

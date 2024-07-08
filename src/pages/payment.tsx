@@ -49,14 +49,23 @@ const Payment: React.FC = () => {
       return;
     }
 
+    const response = await fetch('/api/create-payment-intent', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount: Math.round(cart.reduce((total, item) => total + item.price * item.quantity, 0) * 100), // Amount in cents
+      }),
+    });
+
+    const { clientSecret } = await response.json();
+
     const cardElement = elements.getElement(CardElement);
     if (!cardElement) {
       console.error("CardElement not found");
       return;
     }
-
-    // You need to replace '{CLIENT_SECRET}' with the actual client secret obtained from your backend
-    const clientSecret = '{CLIENT_SECRET}';
 
     const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
       payment_method: {
