@@ -5,6 +5,8 @@ import Image from 'next/image';
 import CartSidebar from './CartSidebar';
 import { useCart } from '../context/CartContext';
 import { motion } from 'framer-motion';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faShoppingCart } from '@fortawesome/free-solid-svg-icons';
 
 type MenuItem = {
   id: string;
@@ -32,7 +34,7 @@ const Menu: React.FC<MenuProps> = ({ menuId, tableId, isCartOpen, onCloseCart })
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const { addToCart, openCart, cart, isOpen, closeCart } = useCart();
+  const { addToCart, toggleCart, cart, isOpen, closeCart } = useCart();
   const [addedItem, setAddedItem] = useState<string | null>(null);
 
   useEffect(() => {
@@ -76,6 +78,7 @@ const Menu: React.FC<MenuProps> = ({ menuId, tableId, isCartOpen, onCloseCart })
       quantity: 1,
     });
     setAddedItem(item.id);
+    toggleCart();
     setTimeout(() => setAddedItem(null), 500); // Reset animation state after 500ms
   };
 
@@ -138,8 +141,8 @@ const Menu: React.FC<MenuProps> = ({ menuId, tableId, isCartOpen, onCloseCart })
       <CartSidebar isOpen={isOpen} onClose={closeCart} />
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-black text-white flex justify-between items-center shadow-lg">
         <span>Cart ({cart.length} items)</span>
-        <button onClick={openCart} className="bg-gold text-black p-2 rounded-full">
-          View Cart
+        <button onClick={toggleCart} className="bg-black text-gold p-2 rounded-full">
+          <FontAwesomeIcon icon={faShoppingCart} size="lg" />
         </button>
       </div>
     </div>

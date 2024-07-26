@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useCart } from '../context/CartContext';
 import { useRouter } from 'next/router';
 
@@ -8,28 +8,49 @@ type CartSidebarProps = {
 };
 
 const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
-  const { cart, addToCart, removeFromCart, clearCart } = useCart();
+  const { cart, addToCart, updateCartItemQuantity, removeFromCart, clearCart } = useCart();
   const router = useRouter();
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
   const handleProceedToPayment = () => {
     router.push('/payment');
   };
 
   const handleDecreaseQuantity = (item) => {
-    if (item.quantity > 1) {
-      addToCart({ ...item, quantity: item.quantity - 1 });
-    } else {
-      removeFromCart(item.id);
-    }
+    updateCartItemQuantity(item.menu_item_id, item.quantity - 1);
   };
 
   const handleIncreaseQuantity = (item) => {
-    addToCart({ ...item, quantity: item.quantity + 1 });
+    updateCartItemQuantity(item.menu_item_id, item.quantity + 1);
   };
+
+  const handleClearCart = async () => {
+    clearCart();
+  };
+
+  const handleClickOutside = (event) => {
+    if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+      onClose();
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return (
     <div
-      className={`fixed top-0 right-0 h-full w-80 bg-white shadow-lg transform ${
+      ref={sidebarRef}
+      className={`fixed top-0 right-0 h-full w-64 bg-white shadow-lg transform ${
         isOpen ? 'translate-x-0' : 'translate-x-full'
       } transition-transform duration-300 ease-in-out`}
     >
@@ -77,8 +98,12 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
         </div>
         {cart.length > 0 && (
           <div className="mt-4">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold">Subtotal</h3>
+              <p className="text-gray-600">${subtotal.toFixed(2)}</p>
+            </div>
             <button
-              onClick={clearCart}
+              onClick={handleClearCart}
               className="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition mb-2"
             >
               Clear Cart
