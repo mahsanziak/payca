@@ -17,6 +17,7 @@ type CartContextType = {
   isOpen: boolean;
   toggleCart: () => void;
   closeCart: () => void;
+  handleCheckout: () => void;
 };
 
 type CartProviderProps = {
@@ -46,11 +47,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   };
 
   const updateCartItemQuantity = (menu_item_id: string, quantity: number) => {
-    const updatedCart = cart.map(cartItem =>
-      cartItem.menu_item_id === menu_item_id
-        ? { ...cartItem, quantity }
-        : cartItem
-    ).filter(cartItem => cartItem.quantity > 0);
+    const updatedCart = cart
+      .map(cartItem =>
+        cartItem.menu_item_id === menu_item_id
+          ? { ...cartItem, quantity }
+          : cartItem
+      )
+      .filter(cartItem => cartItem.quantity > 0);
     setCart(updatedCart);
   };
 
@@ -65,8 +68,12 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const toggleCart = () => setIsOpen(!isOpen);
   const closeCart = () => setIsOpen(false);
 
+  const handleCheckout = () => {
+    alert('Proceeding to checkout');
+  };
+
   return (
-    <CartContext.Provider value={{ cart, addToCart, updateCartItemQuantity, removeFromCart, clearCart, isOpen, toggleCart, closeCart }}>
+    <CartContext.Provider value={{ cart, addToCart, updateCartItemQuantity, removeFromCart, clearCart, isOpen, toggleCart, closeCart, handleCheckout }}>
       {children}
     </CartContext.Provider>
   );

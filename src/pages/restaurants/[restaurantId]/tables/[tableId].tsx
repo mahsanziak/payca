@@ -50,7 +50,7 @@ const TableMenu: React.FC = () => {
   if (!menuId) return <p>No menu found for this restaurant.</p>;
 
   return (
-    <CartProvider tableId={tableId as string}>
+    <CartProvider>
       <main className="container mx-auto py-8 px-6">
         <div className="text-center mb-8">
           <h1 className="text-7xl font-bold">{restaurantName}</h1>
@@ -62,4 +62,3 @@ const TableMenu: React.FC = () => {
 };
 
 export default TableMenu;
-//test
