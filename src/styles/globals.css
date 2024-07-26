@@ -1,16 +1,18 @@
 /* src/styles/globals.css */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
 
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&family=Roboto:wght@100;400;700&display=swap');
 
 body {
-  background-color: #f9fafb;
+  background-color: #1c1c1c; /* Lighter shade of black */
+  color: #d4af37; /* Gold color */
+  font-family: 'Roboto', sans-serif;
 }
 
 h1, h2, h3, h4, h5, h6, p, span, div, button {
-  font-weight: 100 !important;
+  font-family: 'Cormorant Garamond', serif;
 }
 
 .loader {
@@ -33,16 +35,24 @@ h1, h2, h3, h4, h5, h6, p, span, div, button {
   text-align: center;
 }
 
-.bg-gray-50 {
-  background-color: #f9fafb;
+.bg-black {
+  background-color: #1c1c1c; /* Lighter shade of black */
 }
 
-.rounded-full {
-  border-radius: 9999px;
+.text-white {
+  color: #ffffff;
 }
 
-.hover\:bg-orange-400:hover {
-  background-color: #f97316;
+.text-gold {
+  color: #d4af37;
+}
+
+.hover\:bg-gold:hover {
+  background-color: #d4af37;
+}
+
+.hover\:bg-gold-dark:hover {
+  background-color: #b38627;
 }
 
 .hover\:text-white:hover {
@@ -55,6 +65,10 @@ h1, h2, h3, h4, h5, h6, p, span, div, button {
 
 .border-transparent {
   border-color: transparent;
+}
+
+.border-gold {
+  border-color: #d4af37;
 }
 
 .grid {
@@ -85,24 +99,23 @@ h1, h2, h3, h4, h5, h6, p, span, div, button {
 }
 
 .pattern-background {
-  background-image: linear-gradient(45deg, #f3f4f6 25%, transparent 25%, transparent 50%, #f3f4f6 50%, #f3f4f6 75%, transparent 75%, transparent);
-  background-repeat: repeat;
-  background-size: 56.57px 56.57px;
+  background: #1c1c1c url('/path/to/texture-overlay.png') repeat; /* Use a rough texture image */
+  background-size: cover;
   width: 100vw;
   margin-left: calc(-50vw + 50%);
   padding: 2rem 0;
+  filter: brightness(1.1); /* Slightly increase brightness for aesthetic effect */
 }
-/* Hide scrollbar */
+
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
 .hide-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-/* Add smooth scrolling for the entire document */
 html {
   scroll-behavior: smooth;
 }
