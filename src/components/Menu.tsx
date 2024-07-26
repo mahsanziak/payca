@@ -4,6 +4,7 @@ import { Link as ScrollLink, Element } from 'react-scroll';
 import Image from 'next/image';
 import CartSidebar from './CartSidebar';
 import { useCart } from '../context/CartContext';
+import { motion } from 'framer-motion';
 
 type MenuItem = {
   id: string;
@@ -31,7 +32,8 @@ const Menu: React.FC<MenuProps> = ({ menuId, tableId, isCartOpen, onCloseCart })
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const { addToCart, openCart } = useCart();
+  const { addToCart, openCart, cart, isOpen, closeCart } = useCart();
+  const [addedItem, setAddedItem] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMenuData = async () => {
@@ -66,8 +68,19 @@ const Menu: React.FC<MenuProps> = ({ menuId, tableId, isCartOpen, onCloseCart })
     menuItems.some(item => item.category_id === category.id)
   );
 
+  const handleAddToCart = (item: MenuItem) => {
+    addToCart({
+      menu_item_id: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: 1,
+    });
+    setAddedItem(item.id);
+    setTimeout(() => setAddedItem(null), 500); // Reset animation state after 500ms
+  };
+
   return (
-    <div className="bg-black text-gold font-cormorant">
+    <div className="bg-black text-gold font-cormorant relative">
       <div className="pattern-background py-12">
         <div className="max-w-7xl mx-auto p-6">
           <div className="text-center mb-12">
@@ -88,41 +101,47 @@ const Menu: React.FC<MenuProps> = ({ menuId, tableId, isCartOpen, onCloseCart })
               {menuItems
                 .filter((item) => item.category_id === category.id)
                 .map((item) => (
-                  <div
+                  <motion.div
                     key={item.id}
-                    className="flex justify-between items-center bg-black shadow-md rounded-lg p-4 border-b border-gold"
+                    className="flex justify-between items-center bg-black shadow-md rounded-lg p-4 border-b border-gold cursor-pointer"
+                    onClick={() => handleAddToCart(item)}
+                    animate={addedItem === item.id ? { scale: 1.1 } : { scale: 1 }}
+                    transition={{ type: "spring", stiffness: 300 }}
                   >
-                    <div>
-                      <h3 className="text-lg font-semibold">
-                        {item.name}
-                      </h3>
-                      <p className="text-sm text-gray-500">{item.description}</p>
+                    <div className="flex items-center">
+                      <Image
+                        src={item.image_url || 'https://placehold.co/100x100'}
+                        alt={item.name}
+                        width={100}
+                        height={100}
+                        className="rounded-full w-24 h-24 object-cover mr-4"
+                      />
+                      <div className="flex-grow">
+                        <h3 className="text-lg font-semibold">
+                          {item.name}
+                        </h3>
+                        <p className="text-xs text-gray-500">{item.description}</p>
+                      </div>
                     </div>
-                    <div className="text-right">
+                    <div className="flex justify-end ml-auto">
                       <span className="text-md font-bold text-gold">
                         ${item.price.toFixed(2)}
                       </span>
-                      <button
-                        onClick={() => addToCart({
-                          menu_item_id: item.id,
-                          name: item.name,
-                          price: item.price,
-                          quantity: 1,
-                        })}
-                        className="ml-4 p-2 bg-gold text-black rounded-full shadow-md hover:bg-gold-dark transition"
-                        aria-label="Add to Cart"
-                      >
-                        <i className="fas fa-plus"></i>
-                      </button>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
             </div>
           </Element>
         ))}
       </div>
 
-      <CartSidebar isOpen={isCartOpen} onClose={onCloseCart} />
+      <CartSidebar isOpen={isOpen} onClose={closeCart} />
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-black text-white flex justify-between items-center shadow-lg">
+        <span>Cart ({cart.length} items)</span>
+        <button onClick={openCart} className="bg-gold text-black p-2 rounded-full">
+          View Cart
+        </button>
+      </div>
     </div>
   );
 };

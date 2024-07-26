@@ -1,7 +1,7 @@
 /* src/styles/globals.css */
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&family=Roboto:wght@100;400;700&display=swap');
 
@@ -99,7 +99,7 @@ h1, h2, h3, h4, h5, h6, p, span, div, button {
 }
 
 .pattern-background {
-  background: #1c1c1c url('/path/to/texture-overlay.png') repeat; /* Use a rough texture image */
+  background: #1c1c1c url('/textures/waffle-dial.png') repeat; /* Use a waffle dial texture image */
   background-size: cover;
   width: 100vw;
   margin-left: calc(-50vw + 50%);
