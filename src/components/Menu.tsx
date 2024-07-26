@@ -5,8 +5,6 @@ import Image from 'next/image';
 import CartSidebar from './CartSidebar';
 import { useCart } from '../context/CartContext';
 import { motion } from 'framer-motion';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faShoppingCart } from '@fortawesome/free-solid-svg-icons';
 
 type MenuItem = {
   id: string;
@@ -139,12 +137,6 @@ const Menu: React.FC<MenuProps> = ({ menuId, tableId, isCartOpen, onCloseCart })
       </div>
 
       <CartSidebar isOpen={isOpen} onClose={closeCart} />
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-black text-white flex justify-between items-center shadow-lg">
-        <span>Cart ({cart.length} items)</span>
-        <button onClick={toggleCart} className="bg-black text-gold p-2 rounded-full">
-          <FontAwesomeIcon icon={faShoppingCart} size="lg" />
-        </button>
-      </div>
     </div>
   );
 };
