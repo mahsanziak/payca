@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { supabase } from '../utils/supabaseClient'; // Ensure the path is correct
 
 type CartItem = {
   id: string;
@@ -17,7 +18,7 @@ type CartContextType = {
   isOpen: boolean;
   toggleCart: () => void;
   closeCart: () => void;
-  handleCheckout: () => void;
+  saveCartToDB: (restaurantId: string, tableId: string) => Promise<void>;
 };
 
 type CartProviderProps = {
@@ -68,12 +69,31 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const toggleCart = () => setIsOpen(!isOpen);
   const closeCart = () => setIsOpen(false);
 
-  const handleCheckout = () => {
-    alert('Proceeding to checkout');
+  // Function to save the cart to the database
+  const saveCartToDB = async (restaurantId: string, tableId: string) => {
+    try {
+      const { error } = await supabase.from('carts').insert(
+        cart.map(item => ({
+          restaurant_id: restaurantId,
+          table_id: tableId,
+          menu_item_id: item.menu_item_id,
+          quantity: item.quantity,
+        }))
+      );
+
+      if (error) {
+        console.error('Error saving cart to database:', error);
+        alert(`Failed to save cart: ${error.message}`);
+      } else {
+        console.log('Cart saved to database successfully');
+      }
+    } catch (error) {
+      console.error('Unexpected error saving cart to database:', error);
+    }
   };
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, updateCartItemQuantity, removeFromCart, clearCart, isOpen, toggleCart, closeCart, handleCheckout }}>
+    <CartContext.Provider value={{ cart, addToCart, updateCartItemQuantity, removeFromCart, clearCart, isOpen, toggleCart, closeCart, saveCartToDB }}>
       {children}
     </CartContext.Provider>
   );

@@ -10,12 +10,15 @@ type CartSidebarProps = {
 };
 
 const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
-  const { cart, addToCart, updateCartItemQuantity, removeFromCart, clearCart, toggleCart } = useCart();
+  const { cart, addToCart, updateCartItemQuantity, removeFromCart, clearCart, toggleCart, saveCartToDB } = useCart();
   const router = useRouter();
-  const sidebarRef = useRef<HTMLDivElement>(null);
+  const { restaurantId, tableId } = router.query; // Extract restaurantId and tableId from the URL
+  const sidebarRef = useRef<HTMLDivElement>(null); // Define the sidebarRef
 
-  const handleProceedToPayment = () => {
-    router.push('/payment');
+  const handleProceedToPayment = async () => {
+    await saveCartToDB(restaurantId as string, tableId as string); // Save cart items to the database
+    onClose();
+    router.push(`/restaurants/${restaurantId}/tables/payment?restaurantId=${restaurantId}&tableId=${tableId}`);
   };
 
   const handleDecreaseQuantity = (item) => {

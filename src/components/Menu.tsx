@@ -14,6 +14,7 @@ type MenuItem = {
   image_url: string;
   menu_id: string;
   category_id: string;
+  hide: string;
 };
 
 type MenuCategory = {
@@ -42,7 +43,8 @@ const Menu: React.FC<MenuProps> = ({ menuId, tableId, isCartOpen, onCloseCart })
       const { data: itemsData, error: itemsError } = await supabase
         .from('menu_items')
         .select('*')
-        .eq('menu_id', menuId);
+        .eq('menu_id', menuId)
+        .neq('hide', 'Yes');
 
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('menu_categories')
@@ -59,13 +61,16 @@ const Menu: React.FC<MenuProps> = ({ menuId, tableId, isCartOpen, onCloseCart })
     };
 
     fetchMenuData();
+
+    const intervalId = setInterval(fetchMenuData, 5000);
+
+    return () => clearInterval(intervalId);
   }, [menuId]);
 
   if (loading) return <p>Loading...</p>;
 
-  // Filter out categories with no items
-  const filteredCategories = categories.filter(category =>
-    menuItems.some(item => item.category_id === category.id)
+  const filteredCategories = categories.filter((category) =>
+    menuItems.some((item) => item.category_id === category.id && item.hide !== 'Yes')
   );
 
   const handleAddToCart = (item: MenuItem) => {
@@ -77,7 +82,7 @@ const Menu: React.FC<MenuProps> = ({ menuId, tableId, isCartOpen, onCloseCart })
     });
     setAddedItem(item.id);
     toggleCart();
-    setTimeout(() => setAddedItem(null), 500); // Reset animation state after 500ms
+    setTimeout(() => setAddedItem(null), 500);
   };
 
   return (
@@ -100,7 +105,7 @@ const Menu: React.FC<MenuProps> = ({ menuId, tableId, isCartOpen, onCloseCart })
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {menuItems
-                .filter((item) => item.category_id === category.id)
+                .filter((item) => item.category_id === category.id && item.hide !== 'Yes')
                 .map((item) => (
                   <motion.div
                     key={item.id}
