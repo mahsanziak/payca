@@ -28,7 +28,15 @@ const PaymentPage: React.FC = () => {
 
       const { data, error } = await supabase
         .from('carts')
-        .select('id, menu_item_id, quantity, menu_items(name, price)')
+        .select(`
+          id,
+          menu_item_id,
+          quantity,
+          menu_items (
+            name,
+            price
+          )
+        `)
         .eq('restaurant_id', restaurantId)
         .eq('table_id', tableId);
 
@@ -38,8 +46,8 @@ const PaymentPage: React.FC = () => {
         const formattedCartItems = data.map((item) => ({
           id: item.id,
           menu_item_id: item.menu_item_id,
-          name: item.menu_items[0]?.name ?? '',  // Access the first element of the array
-          price: item.menu_items[0]?.price ?? 0, // Default to 0 if price is not available
+          name: item.menu_items?.name || 'Unnamed item',
+          price: item.menu_items?.price || 0,
           quantity: item.quantity,
         }));
         setCartItems(formattedCartItems);
@@ -62,34 +70,16 @@ const PaymentPage: React.FC = () => {
 
     const stripe = await stripePromise;
 
-    // Ensure all prices are correctly converted to integers (cents)
-    const formattedCartItems = cartItems.map(item => {
-      const priceInCents = Math.round(item.price * 100);
-      console.log(`Item: ${item.name}, Price: ${item.price}, Quantity: ${item.quantity}, Price in Cents: ${priceInCents}`);
-
-      if (isNaN(priceInCents) || isNaN(item.quantity)) {
-        console.error('Invalid price or quantity:', { price: item.price, quantity: item.quantity });
-        alert('Invalid price or quantity detected. Please check the cart items.');
-        setLoading(false);
-        return null; // Exit early to avoid sending bad data to the server
-      }
-
-      return {
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: item.name,
-          },
-          unit_amount: priceInCents,
+    const formattedCartItems = cartItems.map(item => ({
+      price_data: {
+        currency: 'usd',
+        product_data: {
+          name: item.name,
         },
-        quantity: item.quantity,
-      };
-    }).filter(Boolean); // Filter out any null values
-
-    if (formattedCartItems.length === 0) {
-      setLoading(false);
-      return;
-    }
+        unit_amount: Math.round(item.price * 100), // convert price to cents
+      },
+      quantity: item.quantity,
+    }));
 
     const response = await fetch('/api/create-checkout-session', {
       method: 'POST',
@@ -193,7 +183,6 @@ const PaymentPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Feedback Form */}
       {!feedbackSubmitted ? (
         <div className="feedback-container">
           <h2 className="text-xl font-semibold">Leave Feedback</h2>
@@ -224,6 +213,13 @@ const PaymentPage: React.FC = () => {
         <p className="text-green-500">Thank you for your feedback!</p>
       )}
 
+      <button
+        className="back-to-menu-button"
+        onClick={() => router.push(`/restaurants/${restaurantId}/tables/${tableId}`)}
+      >
+        Back to Menu
+      </button>
+
       <style jsx>{`
         .container {
           display: flex;
@@ -248,6 +244,8 @@ const PaymentPage: React.FC = () => {
           display: flex;
           flex-direction: column;
           gap: 10px;
+          max-height: 150px; /* Limit the height */
+          overflow-y: scroll; /* Add scrollbar if necessary */
         }
         .cart-item {
           display: flex;
@@ -357,6 +355,19 @@ const PaymentPage: React.FC = () => {
           transition: background-color 0.3s ease;
         }
         .submit-feedback-button:hover {
+          background-color: #444;
+        }
+        .back-to-menu-button {
+          margin-top: 20px;
+          padding: 10px;
+          border-radius: 5px;
+          background-color: #333;
+          color: #ffcc00;
+          border: 1px solid #ffcc00;
+          cursor: pointer;
+          text-align: center;
+        }
+        .back-to-menu-button:hover {
           background-color: #444;
         }
       `}</style>
