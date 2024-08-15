@@ -33,22 +33,23 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
     clearCart();
   };
 
-  const handleClickOutside = (event) => {
-    if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
-      onClose();
-    }
-  };
-
   useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        onClose();
+      }
+    };
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     } else {
       document.removeEventListener('mousedown', handleClickOutside);
     }
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 

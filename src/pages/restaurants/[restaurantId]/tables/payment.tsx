@@ -38,8 +38,8 @@ const PaymentPage: React.FC = () => {
         const formattedCartItems = data.map((item) => ({
           id: item.id,
           menu_item_id: item.menu_item_id,
-          name: item.menu_items.name,
-          price: item.menu_items.price,
+          name: item.menu_items[0]?.name ?? '',  // Access the first element of the array
+          price: item.menu_items[0]?.price ?? 0, // Default to 0 if price is not available
           quantity: item.quantity,
         }));
         setCartItems(formattedCartItems);

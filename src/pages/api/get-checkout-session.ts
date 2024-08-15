@@ -16,10 +16,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     // Fetch the session from Stripe
     const session = await stripe.checkout.sessions.retrieve(session_id, {
-      expand: ['payment_intent'],
+      expand: ['payment_intent', 'payment_intent.charges'],
     });
 
-    const paymentIntent = session.payment_intent as Stripe.PaymentIntent;
+    const paymentIntent = session.payment_intent as Stripe.PaymentIntent & {
+      charges: { data: Stripe.Charge[] };
+    };
+
     const receiptUrl = paymentIntent?.charges?.data[0]?.receipt_url;
 
     // Extract restaurant_id and table_id from the session's metadata or request data
