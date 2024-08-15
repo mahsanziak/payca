@@ -2,9 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../../../../utils/supabaseClient';
 import { loadStripe } from '@stripe/stripe-js';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGooglePay, faApplePay } from '@fortawesome/free-brands-svg-icons';
-import { faMoneyBillWave } from '@fortawesome/free-solid-svg-icons';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -21,6 +18,9 @@ const PaymentPage: React.FC = () => {
   const { restaurantId, tableId } = router.query;
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [feedback, setFeedback] = useState('');
+  const [rating, setRating] = useState(5);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
   useEffect(() => {
     const fetchCartItems = async () => {
@@ -59,21 +59,21 @@ const PaymentPage: React.FC = () => {
 
   const handleCheckout = async () => {
     setLoading(true);
-  
+
     const stripe = await stripePromise;
-  
+
     // Ensure all prices are correctly converted to integers (cents)
     const formattedCartItems = cartItems.map(item => {
       const priceInCents = Math.round(item.price * 100);
       console.log(`Item: ${item.name}, Price: ${item.price}, Quantity: ${item.quantity}, Price in Cents: ${priceInCents}`);
-  
+
       if (isNaN(priceInCents) || isNaN(item.quantity)) {
         console.error('Invalid price or quantity:', { price: item.price, quantity: item.quantity });
         alert('Invalid price or quantity detected. Please check the cart items.');
         setLoading(false);
         return null; // Exit early to avoid sending bad data to the server
       }
-  
+
       return {
         price_data: {
           currency: 'usd',
@@ -85,12 +85,12 @@ const PaymentPage: React.FC = () => {
         quantity: item.quantity,
       };
     }).filter(Boolean); // Filter out any null values
-  
+
     if (formattedCartItems.length === 0) {
       setLoading(false);
       return;
     }
-  
+
     const response = await fetch('/api/create-checkout-session', {
       method: 'POST',
       headers: {
@@ -102,7 +102,7 @@ const PaymentPage: React.FC = () => {
         cancelUrl: `${window.location.origin}/cancel`,
       }),
     });
-  
+
     if (!response.ok) {
       const errorData = await response.json();
       console.error('Server error:', errorData.error);
@@ -110,20 +110,44 @@ const PaymentPage: React.FC = () => {
       setLoading(false);
       return;
     }
-  
+
     const session = await response.json();
-  
+
     const result = await stripe?.redirectToCheckout({
       sessionId: session.id,
     });
-  
+
     if (result?.error) {
       alert(result.error.message);
     }
-  
+
     setLoading(false);
   };
-  
+
+  const handleSubmitFeedback = async () => {
+    if (!restaurantId) return;
+
+    try {
+      const { error } = await supabase.from('feedbacks').insert([
+        {
+          feedback_text: feedback,
+          restaurant_id: restaurantId,
+          rating: rating,
+        }
+      ]);
+
+      if (error) {
+        console.error('Failed to submit feedback:', error);
+        alert('Failed to submit feedback.');
+      } else {
+        setFeedbackSubmitted(true);
+        alert('Feedback submitted successfully!');
+      }
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      alert('Unexpected error occurred.');
+    }
+  };
 
   return (
     <div className="container">
@@ -168,6 +192,38 @@ const PaymentPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Feedback Form */}
+      {!feedbackSubmitted ? (
+        <div className="feedback-container">
+          <h2 className="text-xl font-semibold">Leave Feedback</h2>
+          <textarea
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            placeholder="Enter your feedback here..."
+            className="feedback-textarea"
+          />
+          <div className="rating-container">
+            <label htmlFor="rating" className="rating-label">Rating:</label>
+            <select
+              id="rating"
+              value={rating}
+              onChange={(e) => setRating(parseInt(e.target.value))}
+              className="rating-select"
+            >
+              {[1, 2, 3, 4, 5].map(value => (
+                <option key={value} value={value}>{value}</option>
+              ))}
+            </select>
+          </div>
+          <button onClick={handleSubmitFeedback} className="submit-feedback-button">
+            Submit Feedback
+          </button>
+        </div>
+      ) : (
+        <p className="text-green-500">Thank you for your feedback!</p>
+      )}
+
       <style jsx>{`
         .container {
           display: flex;
@@ -255,6 +311,52 @@ const PaymentPage: React.FC = () => {
           cursor: pointer;
         }
         .payment-method-button:hover {
+          background-color: #444;
+        }
+        .feedback-container {
+          padding: 20px;
+          border: 1px solid #ffcc00;
+          background-color: #2a2a2a;
+          border-radius: 5px;
+          margin-top: 20px;
+        }
+        .feedback-textarea {
+          width: 100%;
+          padding: 10px;
+          margin-top: 10px;
+          border-radius: 5px;
+          border: 1px solid #ccc;
+          resize: vertical;
+          min-height: 100px;
+        }
+        .rating-container {
+          margin-top: 10px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .rating-label {
+          font-weight: bold;
+          color: #ffcc00;
+        }
+        .rating-select {
+          padding: 5px;
+          border-radius: 5px;
+          border: 1px solid #ccc;
+          background-color: #333;
+          color: #ffcc00;
+        }
+        .submit-feedback-button {
+          margin-top: 10px;
+          padding: 10px;
+          border-radius: 5px;
+          background-color: #333;
+          color: #ffcc00;
+          border: 1px solid #ffcc00;
+          cursor: pointer;
+          transition: background-color 0.3s ease;
+        }
+        .submit-feedback-button:hover {
           background-color: #444;
         }
       `}</style>
