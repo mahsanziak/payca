@@ -1,41 +1,47 @@
-// src/components/Cart.tsx
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../utils/supabaseClient';
 
 type CartItem = {
   id: string;
-  menu_item: {
-    name: string;
-    price: number;
-  };
+  menu_item_id: string;
+  name: string;
+  price: number;
   quantity: number;
 };
 
-const Cart: React.FC<{ cartId: string }> = ({ cartId }) => {
+const Cart: React.FC<{ restaurantId: string, tableId: string }> = ({ restaurantId, tableId }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCartItems = async () => {
       const { data, error } = await supabase
-        .from('cart_items')
-        .select('*, menu_item:menu_item_id(name, price)')
-        .eq('cart_id', cartId);
+        .from('carts')
+        .select('id, menu_item_id, quantity, menu_items(name, price)')
+        .eq('restaurant_id', restaurantId)
+        .eq('table_id', tableId);
 
       if (error) {
         console.error('Error fetching cart items:', error);
       } else {
-        setCartItems(data);
+        const formattedCartItems = data.map((item) => ({
+          id: item.id,
+          menu_item_id: item.menu_item_id,
+          name: item.menu_items.name,
+          price: item.menu_items.price,
+          quantity: item.quantity,
+        }));
+        setCartItems(formattedCartItems);
       }
       setLoading(false);
     };
 
     fetchCartItems();
-  }, [cartId]);
+  }, [restaurantId, tableId]);
 
   if (loading) return <p>Loading...</p>;
 
-  const totalAmount = cartItems.reduce((total, item) => total + item.menu_item.price * item.quantity, 0);
+  const totalAmount = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
 
   const handleCheckout = async () => {
     // Implement Stripe Checkout here
@@ -53,10 +59,10 @@ const Cart: React.FC<{ cartId: string }> = ({ cartId }) => {
             {cartItems.map(item => (
               <li key={item.id} className="flex justify-between items-center py-2 border-b">
                 <div>
-                  <h3 className="text-lg">{item.menu_item.name}</h3>
+                  <h3 className="text-lg">{item.name}</h3>
                   <p className="text-sm">Quantity: {item.quantity}</p>
                 </div>
-                <span className="text-lg font-bold">${(item.menu_item.price * item.quantity).toFixed(2)}</span>
+                <span className="text-lg font-bold">${(item.price * item.quantity).toFixed(2)}</span>
               </li>
             ))}
           </ul>
