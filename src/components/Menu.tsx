@@ -73,18 +73,6 @@ const Menu: React.FC<MenuProps> = ({ menuId, tableId, isCartOpen, onCloseCart })
     menuItems.some((item) => item.category_id === category.id && item.hide !== 'Yes')
   );
 
-  const handleAddToCart = (item: MenuItem) => {
-    addToCart({
-      menu_item_id: item.id,
-      name: item.name,
-      price: item.price,
-      quantity: 1,
-    });
-    setAddedItem(item.id);
-    toggleCart();
-    setTimeout(() => setAddedItem(null), 500);
-  };
-
   return (
     <div className="bg-black text-gold font-cormorant relative">
       <div className="pattern-background py-12">
@@ -110,7 +98,7 @@ const Menu: React.FC<MenuProps> = ({ menuId, tableId, isCartOpen, onCloseCart })
                   <motion.div
                     key={item.id}
                     className="flex justify-between items-center bg-black shadow-md rounded-lg p-4 border-b border-gold cursor-pointer"
-                    onClick={() => handleAddToCart(item)}
+                    // onClick={() => handleAddToCart(item)}
                     animate={addedItem === item.id ? { scale: 1.1 } : { scale: 1 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
@@ -141,7 +129,7 @@ const Menu: React.FC<MenuProps> = ({ menuId, tableId, isCartOpen, onCloseCart })
         ))}
       </div>
 
-      <CartSidebar isOpen={isOpen} onClose={closeCart} />
+      {/* <CartSidebar isOpen={isOpen} onClose={closeCart} /> */}
     </div>
   );
 };

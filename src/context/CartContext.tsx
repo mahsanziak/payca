@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { supabase } from '../utils/supabaseClient'; // Ensure the path is correct
+import { supabase } from '../utils/supabaseClient';
 
 type CartItem = {
   id: string;
@@ -31,49 +31,48 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
+  // Add a new item to the cart
   const addToCart = (item: Omit<CartItem, 'id'>) => {
-    const existingItem = cart.find(cartItem => cartItem.menu_item_id === item.menu_item_id);
-
-    if (existingItem) {
-      const updatedCart = cart.map(cartItem =>
-        cartItem.menu_item_id === item.menu_item_id
-          ? { ...cartItem, quantity: cartItem.quantity + 1 }
-          : cartItem
-      );
-      setCart(updatedCart);
-    } else {
-      const newItem = { ...item, id: `${item.menu_item_id}-${Date.now()}`, quantity: 1 };
-      setCart(prevCart => [...prevCart, newItem]);
-    }
+    setCart((prevCart) => {
+      const existingItem = prevCart.find((cartItem) => cartItem.menu_item_id === item.menu_item_id);
+      if (existingItem) {
+        return prevCart.map((cartItem) =>
+          cartItem.menu_item_id === item.menu_item_id
+            ? { ...cartItem, quantity: cartItem.quantity + item.quantity }
+            : cartItem
+        );
+      }
+      const newItem: CartItem = { ...item, id: crypto.randomUUID() };
+      return [...prevCart, newItem];
+    });
   };
 
+  // Update the quantity of a cart item
   const updateCartItemQuantity = (menu_item_id: string, quantity: number) => {
-    const updatedCart = cart
-      .map(cartItem =>
+    setCart((prevCart) =>
+      prevCart.map((cartItem) =>
         cartItem.menu_item_id === menu_item_id
           ? { ...cartItem, quantity }
           : cartItem
       )
-      .filter(cartItem => cartItem.quantity > 0);
-    setCart(updatedCart);
+    );
   };
 
+  // Remove an item from the cart
   const removeFromCart = (id: string) => {
-    setCart(prevCart => prevCart.filter(item => item.id !== id));
+    setCart((prevCart) => prevCart.filter((cartItem) => cartItem.id !== id));
   };
 
+  // Clear all items in the cart
   const clearCart = () => {
     setCart([]);
   };
 
-  const toggleCart = () => setIsOpen(!isOpen);
-  const closeCart = () => setIsOpen(false);
-
-  // Function to save the cart to the database
+  // Save the cart to the database
   const saveCartToDB = async (restaurantId: string, tableId: string) => {
     try {
-      const { error } = await supabase.from('carts').insert(
-        cart.map(item => ({
+      const { data, error } = await supabase.from('carts').upsert(
+        cart.map((item) => ({
           restaurant_id: restaurantId,
           table_id: tableId,
           menu_item_id: item.menu_item_id,
@@ -83,17 +82,32 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
       if (error) {
         console.error('Error saving cart to database:', error);
-        alert(`Failed to save cart: ${error.message}`);
-      } else {
-        console.log('Cart saved to database successfully');
+        throw error;
       }
+
+      console.log('Cart saved to database:', data);
     } catch (error) {
-      console.error('Unexpected error saving cart to database:', error);
+      console.error('Failed to save cart to DB:', error);
     }
   };
 
+  const toggleCart = () => setIsOpen(!isOpen);
+  const closeCart = () => setIsOpen(false);
+
   return (
-    <CartContext.Provider value={{ cart, addToCart, updateCartItemQuantity, removeFromCart, clearCart, isOpen, toggleCart, closeCart, saveCartToDB }}>
+    <CartContext.Provider
+      value={{
+        cart,
+        addToCart,
+        updateCartItemQuantity,
+        removeFromCart,
+        clearCart,
+        isOpen,
+        toggleCart,
+        closeCart,
+        saveCartToDB,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );
