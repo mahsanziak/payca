@@ -3,6 +3,7 @@ import { supabase } from '../utils/supabaseClient';
 import { Link as ScrollLink, Element } from 'react-scroll';
 import Image from 'next/image';
 import CartSidebar from './CartSidebar';
+import Feedbacks from './Feedbacks'; // Import the Feedbacks component
 import { useCart } from '../context/CartContext';
 import { motion } from 'framer-motion';
 
@@ -142,6 +143,11 @@ const Menu: React.FC<MenuProps> = ({ menuId, tableId, isCartOpen, onCloseCart })
       </div>
 
       <CartSidebar isOpen={isOpen} onClose={closeCart} />
+
+      {/* Add Feedbacks Component */}
+      <div className="max-w-7xl mx-auto p-6">
+        <Feedbacks restaurantId={menuId} />
+      </div>
     </div>
   );
 };

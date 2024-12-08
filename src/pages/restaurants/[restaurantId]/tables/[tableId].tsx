@@ -12,42 +12,65 @@ const TableMenu: React.FC = () => {
   const [restaurantName, setRestaurantName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [tableExists, setTableExists] = useState(false);
 
   useEffect(() => {
-    const fetchMenuId = async () => {
-      if (!restaurantId) return;
+    const validateTableAndFetchMenu = async () => {
+      if (!restaurantId || !tableId) return;
 
-      // Fetch restaurant name
-      const { data: restaurantData, error: restaurantError } = await supabase
-        .from('restaurants')
-        .select('name')
-        .eq('id', restaurantId)
-        .single();
+      try {
+        // Validate if the table exists
+        const { data: tableData, error: tableError } = await supabase
+          .from('tables')
+          .select('id')
+          .eq('restaurant_id', restaurantId)
+          .eq('id', tableId)
+          .single();
 
-      // Fetch menu ID
-      const { data: menuData, error: menuError } = await supabase
-        .from('menus')
-        .select('id')
-        .eq('restaurant_id', restaurantId)
-        .single();
+        if (tableError || !tableData) {
+          console.error('Invalid table ID:', tableError);
+          setTableExists(false);
+          setLoading(false);
+          return;
+        }
 
-      if (restaurantError || menuError) {
-        console.error('Error fetching data:', restaurantError || menuError);
-        setLoading(false);
-      } else {
+        setTableExists(true);
+
+        // Fetch restaurant name
+        const { data: restaurantData, error: restaurantError } = await supabase
+          .from('restaurants')
+          .select('name')
+          .eq('id', restaurantId)
+          .single();
+
+        if (restaurantError) throw restaurantError;
+
+        // Fetch the enabled menu for the restaurant
+        const { data: menuData, error: menuError } = await supabase
+          .from('menus')
+          .select('id')
+          .eq('restaurant_id', restaurantId)
+          .eq('enabled', true)
+          .single();
+
+        if (menuError) throw menuError;
+
+        // Set the state with restaurant name and menu ID
         setRestaurantName(restaurantData?.name || '');
-        setMenuId(menuData?.id || '');
+        setMenuId(menuData?.id || null);
+      } catch (error) {
+        console.error('Error fetching menu or restaurant:', error);
+      } finally {
         setLoading(false);
       }
     };
 
-    if (restaurantId) {
-      fetchMenuId();
-    }
-  }, [restaurantId]);
+    validateTableAndFetchMenu();
+  }, [restaurantId, tableId]);
 
   if (loading) return <Loading restaurantName={restaurantName || 'Loading...'} />;
-  if (!menuId) return <p>No menu found for this restaurant.</p>;
+  if (!tableExists) return <p>Invalid table ID. Please check the URL.</p>;
+  if (!menuId) return <p>No active menu found for this restaurant.</p>;
 
   return (
     <CartProvider>
@@ -55,7 +78,12 @@ const TableMenu: React.FC = () => {
         <div className="text-center mb-8">
           <h1 className="text-7xl font-bold">{restaurantName}</h1>
         </div>
-        <Menu menuId={menuId} tableId={tableId as string} isCartOpen={isCartOpen} onCloseCart={() => setIsCartOpen(false)} />
+        <Menu
+          menuId={menuId}
+          tableId={tableId as string}
+          isCartOpen={isCartOpen}
+          onCloseCart={() => setIsCartOpen(false)}
+        />
       </main>
     </CartProvider>
   );

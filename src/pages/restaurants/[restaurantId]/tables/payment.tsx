@@ -1,12 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../../../../utils/supabaseClient';
-import { loadStripe } from '@stripe/stripe-js';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGooglePay, faApplePay } from '@fortawesome/free-brands-svg-icons';
-import { faMoneyBillWave } from '@fortawesome/free-solid-svg-icons';
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 type CartItem = {
   id: string;
@@ -51,79 +45,80 @@ const PaymentPage: React.FC = () => {
     fetchCartItems();
   }, [restaurantId, tableId]);
 
+
+  const handleSendOrder = async () => {
+    if (!restaurantId || !tableId) {
+      alert('Invalid restaurant or table details.');
+      return;
+    }
+  
+    try {
+      const total_price = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  
+      // Generate a unique order_number for the restaurant
+      const { data: existingOrders, error: fetchError } = await supabase
+        .from('orders')
+        .select('order_number')
+        .eq('restaurant_id', restaurantId)
+        .order('order_number', { ascending: false })
+        .limit(1);
+  
+      if (fetchError) {
+        console.error('Error fetching existing orders:', fetchError);
+        alert('Failed to generate order number.');
+        return;
+      }
+  
+      const nextOrderNumber = existingOrders.length > 0 ? existingOrders[0].order_number + 1 : 1;
+  
+      // Format items as requested
+      const items = cartItems.map((item) => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        menu_item_id: item.menu_item_id,
+      }));
+  
+      // Insert the order into the `orders` table
+      const { data: insertedOrder, error: insertError } = await supabase.from('orders').insert({
+        restaurant_id: restaurantId,
+        table_id: tableId,
+        total_price,
+        status: 'pending',
+        order_number: nextOrderNumber,
+        items, // Save the cart items as JSON
+      }).select();
+  
+      if (insertError) {
+        console.error('Error sending order:', insertError);
+        alert('Failed to send order.');
+      } else {
+        const order = insertedOrder[0]; // Get the inserted order
+  
+        // Redirect to the order confirmation page with the order number
+        router.push(
+          `/restaurants/${restaurantId}/tables/order-confirmation?order_number=${order.order_number}&restaurantId=${restaurantId}&tableId=${tableId}`
+        );
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      alert('An unexpected error occurred.');
+    }
+  };
+  
+
+  
+
+  const handleBackToMenu = () => {
+    router.push(`/restaurants/${restaurantId}/tables/${tableId}`);
+  };
+
   if (loading) return <p>Loading...</p>;
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const taxes = subtotal * 0.15; // Example tax calculation (15%)
   const total = subtotal + taxes;
-
-  const handleCheckout = async () => {
-    setLoading(true);
-  
-    const stripe = await stripePromise;
-  
-    // Ensure all prices are correctly converted to integers (cents)
-    const formattedCartItems = cartItems.map(item => {
-      const priceInCents = Math.round(item.price * 100);
-      console.log(`Item: ${item.name}, Price: ${item.price}, Quantity: ${item.quantity}, Price in Cents: ${priceInCents}`);
-  
-      if (isNaN(priceInCents) || isNaN(item.quantity)) {
-        console.error('Invalid price or quantity:', { price: item.price, quantity: item.quantity });
-        alert('Invalid price or quantity detected. Please check the cart items.');
-        setLoading(false);
-        return null; // Exit early to avoid sending bad data to the server
-      }
-  
-      return {
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: item.name,
-          },
-          unit_amount: priceInCents,
-        },
-        quantity: item.quantity,
-      };
-    }).filter(Boolean); // Filter out any null values
-  
-    if (formattedCartItems.length === 0) {
-      setLoading(false);
-      return;
-    }
-  
-    const response = await fetch('/api/create-checkout-session', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        cartItems: formattedCartItems,
-        successUrl: `${window.location.origin}/success`,
-        cancelUrl: `${window.location.origin}/cancel`,
-      }),
-    });
-  
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Server error:', errorData.error);
-      alert(`Server error: ${errorData.error}`);
-      setLoading(false);
-      return;
-    }
-  
-    const session = await response.json();
-  
-    const result = await stripe?.redirectToCheckout({
-      sessionId: session.id,
-    });
-  
-    if (result?.error) {
-      alert(result.error.message);
-    }
-  
-    setLoading(false);
-  };
-  
 
   return (
     <div className="container">
@@ -156,17 +151,20 @@ const PaymentPage: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="payment-method-container">
-        <h2 className="payment-method-heading">Payment Method</h2>
-        <div className="payment-method-options">
-          <button
-            className="payment-method-button"
-            onClick={handleCheckout}
-            disabled={loading}
-          >
-            {loading ? 'Processing...' : 'Pay with Stripe'}
-          </button>
-        </div>
+      <div className="button-container">
+        <button
+          className="send-order-button"
+          onClick={handleSendOrder}
+          disabled={loading}
+        >
+          {loading ? 'Processing...' : 'Send Order'}
+        </button>
+        <button
+          className="back-to-menu-button"
+          onClick={handleBackToMenu}
+        >
+          Back to Menu
+        </button>
       </div>
       <style jsx>{`
         .container {
@@ -176,8 +174,7 @@ const PaymentPage: React.FC = () => {
           width: 625px;
           margin: 40px auto;
         }
-        .cart-container,
-        .payment-method-container {
+        .cart-container {
           border: 1px solid #ffcc00;
           padding: 20px;
           background-color: #2a2a2a;
@@ -213,9 +210,6 @@ const PaymentPage: React.FC = () => {
           justify-content: space-between;
           align-items: center;
         }
-        .order-total-name {
-          font-weight: bold;
-        }
         .order-total-price {
           font-size: 14px;
           color: #ffcc00;
@@ -229,32 +223,24 @@ const PaymentPage: React.FC = () => {
           font-weight: bold;
           color: #ffcc00;
         }
-        .payment-method-container {
-          border: 1px solid #ffcc00;
-          padding: 20px;
-          background-color: #2a2a2a;
-        }
-        .payment-method-heading {
-          font-size: 24px;
-          text-align: center;
-          color: #ffcc00;
-        }
-        .payment-method-options {
+        .button-container {
           display: flex;
-          justify-content: space-around;
+          justify-content: space-between;
+          gap: 20px;
         }
-        .payment-method-button {
-          display: flex;
-          align-items: center;
-          gap: 10px;
+        .send-order-button,
+        .back-to-menu-button {
+          flex: 1;
           padding: 10px 20px;
-          border: 1px solid #ffcc00;
-          border-radius: 5px;
           background-color: #333;
           color: #ffcc00;
+          border: 1px solid #ffcc00;
+          border-radius: 5px;
           cursor: pointer;
+          text-align: center;
         }
-        .payment-method-button:hover {
+        .send-order-button:hover,
+        .back-to-menu-button:hover {
           background-color: #444;
         }
       `}</style>

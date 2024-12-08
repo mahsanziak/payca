@@ -10,15 +10,32 @@ type CartSidebarProps = {
 };
 
 const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
-  const { cart, addToCart, updateCartItemQuantity, removeFromCart, clearCart, toggleCart, saveCartToDB } = useCart();
+  const {
+    cart,
+    updateCartItemQuantity,
+    removeFromCart,
+    clearCart,
+    toggleCart,
+  } = useCart();
   const router = useRouter();
-  const { restaurantId, tableId } = router.query; // Extract restaurantId and tableId from the URL
-  const sidebarRef = useRef<HTMLDivElement>(null); // Define the sidebarRef
+  const { restaurantId, tableId } = router.query;
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
-  const handleProceedToPayment = async () => {
-    await saveCartToDB(restaurantId as string, tableId as string); // Save cart items to the database
-    onClose();
-    router.push(`/restaurants/${restaurantId}/tables/payment?restaurantId=${restaurantId}&tableId=${tableId}`);
+  const handleSendOrder = async () => {
+    try {
+      if (!restaurantId || !tableId) {
+        console.error('Restaurant ID or Table ID is missing.');
+        return;
+      }
+
+      console.log('Order sent to admin with details:', cart);
+      onClose();
+
+      // Navigate to the order summary page
+      router.push(`/restaurants/${restaurantId}/tables/payment?restaurantId=${restaurantId}&tableId=${tableId}`);
+    } catch (error) {
+      console.error('Error while sending the order:', error);
+    }
   };
 
   const handleDecreaseQuantity = (item) => {
@@ -116,10 +133,10 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
               Clear Cart
             </button>
             <button
-              onClick={handleProceedToPayment}
-              className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition"
+              onClick={handleSendOrder}
+              className="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
             >
-              Proceed to Payment
+              Proceed to Send Order
             </button>
           </div>
         )}
