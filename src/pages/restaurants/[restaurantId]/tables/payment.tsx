@@ -66,18 +66,18 @@ const PaymentPage: React.FC = () => {
   
       // Generate a unique order_number for the restaurant
       const { data: existingOrders, error: fetchError } = await supabase
-      .from('orders')
-      .select('order_number')
-      .order('order_number', { ascending: false })
-      .limit(1);
-
-    if (fetchError) {
-      console.error('Error fetching existing orders:', fetchError);
-      alert('Failed to generate order number.');
-      return;
-    }
+        .from('orders')
+        .select('order_number')
+        .order('order_number', { ascending: false })
+        .limit(1);
   
-    const nextOrderNumber = existingOrders.length > 0 ? existingOrders[0].order_number + 1 : 1;
+      if (fetchError) {
+        console.error('Error fetching existing orders:', fetchError);
+        alert('Failed to generate order number.');
+        return;
+      }
+  
+      const nextOrderNumber = existingOrders.length > 0 ? existingOrders[0].order_number + 1 : 1;
   
       // Format items as requested
       const items = cartItems.map((item) => ({
@@ -101,14 +101,28 @@ const PaymentPage: React.FC = () => {
       if (insertError) {
         console.error('Error sending order:', insertError);
         alert('Failed to send order.');
-      } else {
-        const order = insertedOrder[0]; // Get the inserted order
-  
-        // Redirect to the order confirmation page with the order number
-        router.push(
-          `/restaurants/${restaurantId}/tables/order-confirmation?order_number=${order.order_number}&restaurantId=${restaurantId}&tableId=${tableId}`
-        );
+        return;
       }
+  
+      // Clear the cart after the order is created
+      const { error: clearError } = await supabase
+        .from('carts')
+        .delete()
+        .eq('restaurant_id', restaurantId)
+        .eq('table_id', tableId);
+  
+      if (clearError) {
+        console.error('Error clearing cart:', clearError);
+        alert('Failed to clear cart.');
+        return;
+      }
+  
+      const order = insertedOrder[0]; // Get the inserted order
+  
+      // Redirect to the order confirmation page with the order number
+      router.push(
+        `/restaurants/${restaurantId}/tables/order-confirmation?order_number=${order.order_number}&restaurantId=${restaurantId}&tableId=${tableId}`
+      );
     } catch (err) {
       console.error('Unexpected error:', err);
       alert('An unexpected error occurred.');
@@ -125,134 +139,146 @@ const PaymentPage: React.FC = () => {
   if (loading) return <p>Loading...</p>;
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const taxes = subtotal * 0.15; // Example tax calculation (15%)
-  const total = subtotal + taxes;
+ 
+  const total = subtotal;
 
-  return (
+   return (
     <div className="container">
-      <div className="cart-container">
-        <h1 className="order-summary-heading">Order Summary</h1>
-        <div className="cart-items">
-          {cartItems.map((item) => (
-            <div key={item.id} className="cart-item">
-              <div className="cart-item-details">
-                <span className="cart-item-name">{item.name}</span>
-                <span className="cart-item-price">
-                  ${item.price.toFixed(2)} x {item.quantity} = ${(item.price * item.quantity).toFixed(2)}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="order-total">
-          <div className="order-total-item">
-            <span className="order-total-name">Subtotal</span>
-            <span className="order-total-price">${subtotal.toFixed(2)}</span>
-          </div>
-          <div className="order-total-item">
-            <span className="order-total-name">Taxes</span>
-            <span className="order-total-price">${taxes.toFixed(2)}</span>
-          </div>
-          <div className="total-container">
-            <span>Total</span>
-            <span>${total.toFixed(2)}</span>
-          </div>
+    <div className="cart-container">
+      <h1 className="order-summary-heading">Order Summary</h1>
+      <div className="cart-items">
+  {cartItems.map((item) => (
+    <div key={item.id} className="cart-item">
+      <div className="cart-item-details">
+        <span className="cart-item-name">{item.name}</span>
+        <div className="cart-item-pricing">
+          <span className="cart-item-breakdown">
+            ${item.price.toFixed(2)} x {item.quantity}
+          </span>
+          <span className="cart-item-total">
+            = ${(item.price * item.quantity).toFixed(2)}
+          </span>
         </div>
       </div>
-      <div className="button-container">
-        <button
-          className="send-order-button"
-          onClick={handleSendOrder}
-          disabled={loading}
-        >
-          {loading ? 'Processing...' : 'Send Order'}
-        </button>
-        <button
-          className="back-to-menu-button"
-          onClick={handleBackToMenu}
-        >
-          Back to Menu
-        </button>
-      </div>
-      <style jsx>{`
-        .container {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-          width: 625px;
-          margin: 40px auto;
-        }
-        .cart-container {
-          border: 1px solid #ffcc00;
-          padding: 20px;
-          background-color: #2a2a2a;
-        }
-        .order-summary-heading {
-          text-align: center;
-          font-size: 32px;
-          margin-bottom: 20px;
-          color: #ffcc00;
-        }
-        .cart-items {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-        .cart-item {
-          display: flex;
-          justify-content: space-between;
-          gap: 10px;
-          padding: 10px;
-          background-color: #333;
-          border: 1px solid #ffcc00;
-          border-radius: 5px;
-        }
-        .order-total {
-          margin-top: 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-        .order-total-item {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .order-total-price {
-          font-size: 14px;
-          color: #ffcc00;
-        }
-        .total-container {
-          margin-top: 20px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          font-size: 24px;
-          font-weight: bold;
-          color: #ffcc00;
-        }
-        .button-container {
-          display: flex;
-          justify-content: space-between;
-          gap: 20px;
-        }
-        .send-order-button,
-        .back-to-menu-button {
-          flex: 1;
-          padding: 10px 20px;
-          background-color: #333;
-          color: #ffcc00;
-          border: 1px solid #ffcc00;
-          border-radius: 5px;
-          cursor: pointer;
-          text-align: center;
-        }
-        .send-order-button:hover,
-        .back-to-menu-button:hover {
-          background-color: #444;
-        }
-      `}</style>
     </div>
+  ))}
+</div>
+
+      <div className="order-summary-totals">
+        <div className="order-total-item">
+          <span className="order-total-label">Subtotal:</span>
+          <span className="order-total-value">${subtotal.toFixed(2)}</span>
+        </div>
+        <div className="order-total-item total">
+          <span className="order-total-label">Total:</span>
+          <span className="order-total-value">${subtotal.toFixed(2)} <small>(plus applicable taxes if any)</small></span>
+        </div>
+      </div>
+    </div>
+    <div className="button-container">
+      <button
+        className="send-order-button"
+        onClick={handleSendOrder}
+        disabled={loading}
+      >
+        {loading ? 'Processing...' : 'Send Order'}
+      </button>
+      <button
+        className="back-to-menu-button"
+        onClick={handleBackToMenu}
+      >
+        Back to Menu
+      </button>
+    </div>
+    <style jsx>{`
+      .container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        width: 625px;
+        margin: 40px auto;
+        background-color: #2a2a2a;
+        border: 1px solid #ffcc00;
+        border-radius: 8px;
+        padding: 20px;
+      }
+      .order-summary-heading {
+        text-align: center;
+        font-size: 28px;
+        margin-bottom: 20px;
+        color: #ffcc00;
+      }
+      .cart-items {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      .cart-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        background-color: #333;
+        border: 1px solid #ffcc00;
+        border-radius: 5px;
+      }
+      .cart-item-name {
+        font-weight: bold;
+        color: #fff;
+      }
+      .cart-item-price {
+        color: #ffcc00;
+      }
+      .order-summary-totals {
+        margin-top: 20px;
+      }
+      .order-total-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-top: 1px solid #444;
+      }
+      .order-total-item.total {
+        border-top: 2px solid #ffcc00;
+        font-weight: bold;
+      }
+      .order-total-label {
+        color: #ccc;
+      }
+      .order-total-value {
+        color: #ffcc00;
+      }
+      .button-container {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        margin-top: 20px;
+      }
+      .send-order-button,
+      .back-to-menu-button {
+        flex: 1;
+        padding: 10px;
+        font-size: 16px;
+        font-weight: bold;
+        text-align: center;
+        color: #ffcc00;
+        background-color: #333;
+        border: 1px solid #ffcc00;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .send-order-button:hover,
+      .back-to-menu-button:hover {
+        background-color: #444;
+      }
+      .send-order-button:disabled {
+        background-color: #555;
+        color: #777;
+        cursor: not-allowed;
+      }
+    `}</style>
+  </div>
+  
   );
 };
 
