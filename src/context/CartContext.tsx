@@ -12,7 +12,7 @@ type CartItem = {
 
 type CartContextType = {
   cart: { [key: string]: CartItem[] };
-  addToCart: (item: Omit<CartItem, 'id' | 'name' | 'price'>) => void;
+  addToCart: (item: Omit<CartItem, 'id'>) => void; // Only `id` is excluded now
   updateCartItemQuantity: (menu_item_id: string, quantity: number) => void;
   removeFromCart: (id: string) => void;
   clearCart: () => void;
@@ -20,6 +20,7 @@ type CartContextType = {
   toggleCart: () => void;
   closeCart: () => void;
 };
+
 
 type CartProviderProps = {
   children: ReactNode;
@@ -79,30 +80,20 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     fetchCartItems();
   }, [restaurantId, tableId, cartKey]);
 
-  const addToCart = async (item: Omit<CartItem, 'id' | 'name' | 'price'>) => {
+  const addToCart = async (item: Omit<CartItem, 'id'>) => {
     try {
       if (!restaurantId || !tableId) {
         console.error('Missing restaurantId or tableId in the URL');
         return;
       }
   
-      // Check if the item exists in the `menu_items` table
-      const { data: menuItemData, error: menuItemError } = await supabase
-        .from('menu_items')
-        .select('id, name, price')
-        .eq('id', item.menu_item_id)
-        .single();
-  
-      if (menuItemError) {
-        console.error('Menu item not found or error fetching:', menuItemError);
-        return;
-      }
+      const { menu_item_id, name, price, quantity } = item;
   
       // Check if the item already exists in the cart
       const { data: existingItem, error: fetchError } = await supabase
         .from('carts')
         .select('id, quantity')
-        .eq('menu_item_id', item.menu_item_id)
+        .eq('menu_item_id', menu_item_id)
         .eq('restaurant_id', restaurantId)
         .eq('table_id', tableId)
         .single();
@@ -116,53 +107,63 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         // Increment quantity if item exists
         const { error: updateError } = await supabase
           .from('carts')
-          .update({ quantity: existingItem.quantity + 1 })
+          .update({ quantity: existingItem.quantity + quantity })
           .eq('id', existingItem.id);
   
         if (updateError) {
           console.error('Error updating cart item quantity:', updateError);
         } else {
+          // Update cart state
           setCart((prevCart) => ({
             ...prevCart,
             [cartKey]: prevCart[cartKey].map((cartItem) =>
               cartItem.id === existingItem.id
-                ? { ...cartItem, quantity: existingItem.quantity + 1 }
+                ? { ...cartItem, quantity: existingItem.quantity + quantity }
                 : cartItem
             ),
           }));
         }
       } else {
         // Add new item to cart if it doesn't exist
-        const { data: insertedData, error: insertError } = await supabase
+        const { data, error: insertError } = await supabase
           .from('carts')
           .insert({
-            menu_item_id: item.menu_item_id,
-            restaurant_id: restaurantId,
-            table_id: tableId,
-            quantity: 1,
+            menu_item_id,
+            restaurant_id: restaurantId as string,
+            table_id: tableId as string,
+            quantity,
           })
-          .select(); // Return the inserted row
+          .select(); // Ensure we retrieve the inserted data
   
         if (insertError) {
           console.error('Error adding new item to cart:', insertError);
-        } else {
+          return;
+        }
+  
+        if (data && data.length > 0) {
+          // Construct new cart item with additional details
           const newCartItem = {
-            id: insertedData[0].id,
-            menu_item_id: menuItemData.id,
-            name: menuItemData.name,
-            price: menuItemData.price,
-            quantity: 1,
+            id: data[0].id,
+            menu_item_id,
+            name,
+            price,
+            quantity,
           };
+  
           setCart((prevCart) => ({
             ...prevCart,
             [cartKey]: [...(prevCart[cartKey] || []), newCartItem],
           }));
+        } else {
+          console.error('No data returned after insert.');
         }
       }
     } catch (err) {
       console.error('Unexpected error in addToCart:', err);
     }
   };
+  
+  
   
   
 

@@ -22,23 +22,32 @@ const PaymentPage: React.FC = () => {
 
       const { data, error } = await supabase
         .from('carts')
-        .select('id, menu_item_id, quantity, menu_items(name, price)')
+        .select(`
+          id,
+          menu_item_id,
+          quantity,
+          menu_items (
+            name,
+            price
+          )
+        `)
         .eq('restaurant_id', restaurantId)
         .eq('table_id', tableId);
 
       if (error) {
         console.error('Error fetching cart items:', error);
-      } else {
-        const formattedCartItems = data.map((item) => ({
-          id: item.id,
-          menu_item_id: item.menu_item_id,
-          name: item.menu_items.name,
-          price: item.menu_items.price,
-          quantity: item.quantity,
-        }));
-        setCartItems(formattedCartItems);
+        return;
       }
 
+      const formattedCartItems = (data || []).map((item: any) => ({
+        id: item.id,
+        menu_item_id: item.menu_item_id,
+        name: item.menu_items?.name || 'Unknown item',
+        price: item.menu_items?.price || 0,
+        quantity: item.quantity,
+      }));
+
+      setCartItems(formattedCartItems);
       setLoading(false);
     };
 

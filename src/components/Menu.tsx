@@ -6,6 +6,7 @@ import CartSidebar from './CartSidebar';
 import Feedbacks from './Feedbacks'; // Import the Feedbacks component
 import { useCart } from '../context/CartContext';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/router'; 
 
 type MenuItem = {
   id: string;
@@ -36,7 +37,8 @@ const Menu: React.FC<MenuProps> = ({ menuId, tableId, isCartOpen, onCloseCart })
   const [loading, setLoading] = useState(true);
   const { addToCart, toggleCart, cart, isOpen, closeCart } = useCart();
   const [addedItem, setAddedItem] = useState<string | null>(null);
-
+  const router = useRouter();
+  const { restaurantId } = router.query; // Fetch restaurantId from the query
   useEffect(() => {
     const fetchMenuData = async () => {
       if (!menuId) return;
@@ -85,6 +87,7 @@ const Menu: React.FC<MenuProps> = ({ menuId, tableId, isCartOpen, onCloseCart })
     toggleCart();
     setTimeout(() => setAddedItem(null), 500);
   };
+  
 
   return (
     <div className="bg-black text-gold font-cormorant relative">
@@ -145,9 +148,11 @@ const Menu: React.FC<MenuProps> = ({ menuId, tableId, isCartOpen, onCloseCart })
       <CartSidebar isOpen={isOpen} onClose={closeCart} />
 
       {/* Add Feedbacks Component */}
-      <div className="max-w-7xl mx-auto p-6">
-        <Feedbacks restaurantId={menuId} />
-      </div>
+      {restaurantId && (
+        <div className="max-w-7xl mx-auto p-6">
+          <Feedbacks restaurantId={restaurantId as string} />
+        </div>
+      )}
     </div>
   );
 };

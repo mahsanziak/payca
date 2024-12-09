@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { supabase } from '../utils/supabaseClient';
-import { useRouter } from 'next/router';
 
-const Feedbacks: React.FC = () => {
-  const router = useRouter();
-  const { restaurantId } = router.query;
+type FeedbacksProps = {
+  restaurantId: string;
+};
+
+const Feedbacks: React.FC<FeedbacksProps> = ({ restaurantId }) => {
   const [feedbackText, setFeedbackText] = useState('');
   const [rating, setRating] = useState(0);
 
@@ -21,7 +22,7 @@ const Feedbacks: React.FC = () => {
 
     try {
       const { error } = await supabase.from('feedbacks').insert({
-        restaurant_id: restaurantId as string, // Use restaurantId from the URL
+        restaurant_id: restaurantId,
         feedback_text: feedbackText,
         rating,
       });
