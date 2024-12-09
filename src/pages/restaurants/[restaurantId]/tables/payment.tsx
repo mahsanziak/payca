@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../../../../utils/supabaseClient';
-
+// payment page (order summary)
 type CartItem = {
   id: string;
   menu_item_id: string;
