@@ -19,6 +19,8 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
   } = useCart();
   const router = useRouter();
   const { restaurantId, tableId } = router.query;
+
+  const cartKey = `${restaurantId}-${tableId}`;
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   const handleSendOrder = async () => {
@@ -28,7 +30,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
         return;
       }
 
-      console.log('Order sent to admin with details:', cart);
+      console.log('Order sent to admin with details:', cart[cartKey] || []);
       onClose();
 
       // Navigate to the order summary page
@@ -67,7 +69,8 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
     };
   }, [isOpen]);
 
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const cartItems = cart[cartKey] || [];
+  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return (
     <div className="relative">
@@ -86,10 +89,10 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
         <div className="flex-grow overflow-y-auto p-4">
-          {cart.length === 0 ? (
+          {cartItems.length === 0 ? (
             <p className="text-gray-600">Your cart is empty.</p>
           ) : (
-            cart.map((item) => (
+            cartItems.map((item) => (
               <div key={item.id} className="flex items-center mb-4">
                 <div className="flex-grow">
                   <h3 className="text-lg font-semibold">{item.name}</h3>
@@ -120,7 +123,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
             ))
           )}
         </div>
-        {cart.length > 0 && (
+        {cartItems.length > 0 && (
           <div className="p-4 flex-shrink-0 bg-white shadow-md">
             <div className="mb-4">
               <h3 className="text-lg font-semibold">Subtotal</h3>

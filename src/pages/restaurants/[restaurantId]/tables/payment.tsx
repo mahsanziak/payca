@@ -57,19 +57,18 @@ const PaymentPage: React.FC = () => {
   
       // Generate a unique order_number for the restaurant
       const { data: existingOrders, error: fetchError } = await supabase
-        .from('orders')
-        .select('order_number')
-        .eq('restaurant_id', restaurantId)
-        .order('order_number', { ascending: false })
-        .limit(1);
+      .from('orders')
+      .select('order_number')
+      .order('order_number', { ascending: false })
+      .limit(1);
+
+    if (fetchError) {
+      console.error('Error fetching existing orders:', fetchError);
+      alert('Failed to generate order number.');
+      return;
+    }
   
-      if (fetchError) {
-        console.error('Error fetching existing orders:', fetchError);
-        alert('Failed to generate order number.');
-        return;
-      }
-  
-      const nextOrderNumber = existingOrders.length > 0 ? existingOrders[0].order_number + 1 : 1;
+    const nextOrderNumber = existingOrders.length > 0 ? existingOrders[0].order_number + 1 : 1;
   
       // Format items as requested
       const items = cartItems.map((item) => ({

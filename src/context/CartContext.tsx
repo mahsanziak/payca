@@ -11,7 +11,7 @@ type CartItem = {
 };
 
 type CartContextType = {
-  cart: CartItem[];
+  cart: { [key: string]: CartItem[] };
   addToCart: (item: Omit<CartItem, 'id' | 'name' | 'price'>) => void;
   updateCartItemQuantity: (menu_item_id: string, quantity: number) => void;
   removeFromCart: (id: string) => void;
@@ -28,14 +28,14 @@ type CartProviderProps = {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<{ [key: string]: CartItem[] }>({});
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
-  // Extract restaurantId and tableId from the URL
   const { restaurantId, tableId } = router.query;
+  const cartKey = `${restaurantId}-${tableId}`;
 
-  // Fetch initial cart data and subscribe to real-time updates
+  // Fetch initial cart data for the specific restaurant and table
   useEffect(() => {
     const fetchCartItems = async () => {
       if (!restaurantId || !tableId) return;
@@ -65,88 +65,36 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
             price: cartItem.menu_items?.price || 0,
             quantity: cartItem.quantity,
           }));
-          setCart(enrichedCart);
+
+          setCart((prevCart) => ({
+            ...prevCart,
+            [cartKey]: enrichedCart,
+          }));
         }
       } catch (err) {
         console.error('Unexpected error fetching cart items:', err);
       }
     };
 
-    const subscribeToCartUpdates = () => {
-      const channel = supabase
-        .channel('realtime:public:carts')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'carts' },
-          async (payload) => {
-            const { eventType, new: newItem, old: oldItem } = payload;
-    
-            if (eventType === 'INSERT' || eventType === 'UPDATE') {
-              try {
-                // Fetch the enriched item details from the database
-                const { data: enrichedItem, error } = await supabase
-                  .from('menu_items')
-                  .select('name, price')
-                  .eq('id', newItem.menu_item_id)
-                  .single();
-    
-                if (error) {
-                  console.error('Error fetching menu item details:', error);
-                  return;
-                }
-    
-                setCart((prevCart) => {
-                  if (eventType === 'INSERT') {
-                    return [
-                      ...prevCart,
-                      {
-                        ...newItem,
-                        name: enrichedItem?.name || '',
-                        price: enrichedItem?.price || 0,
-                      },
-                    ];
-                  } else if (eventType === 'UPDATE') {
-                    return prevCart.map((item) =>
-                      item.id === oldItem.id
-                        ? {
-                            ...item,
-                            ...newItem,
-                            name: enrichedItem?.name || item.name,
-                            price: enrichedItem?.price || item.price,
-                          }
-                        : item
-                    );
-                  }
-                  return prevCart;
-                });
-              } catch (err) {
-                console.error('Unexpected error during cart update:', err);
-              }
-            } else if (eventType === 'DELETE') {
-              setCart((prevCart) => prevCart.filter((item) => item.id !== oldItem.id));
-            }
-          }
-        )
-        .subscribe();
-    
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    };
-    
-
     fetchCartItems();
-    const unsubscribe = subscribeToCartUpdates();
-
-    return () => {
-      unsubscribe();
-    };
-  }, [restaurantId, tableId]);
+  }, [restaurantId, tableId, cartKey]);
 
   const addToCart = async (item: Omit<CartItem, 'id' | 'name' | 'price'>) => {
     try {
       if (!restaurantId || !tableId) {
         console.error('Missing restaurantId or tableId in the URL');
+        return;
+      }
+  
+      // Check if the item exists in the `menu_items` table
+      const { data: menuItemData, error: menuItemError } = await supabase
+        .from('menu_items')
+        .select('id, name, price')
+        .eq('id', item.menu_item_id)
+        .single();
+  
+      if (menuItemError) {
+        console.error('Menu item not found or error fetching:', menuItemError);
         return;
       }
   
@@ -165,7 +113,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       }
   
       if (existingItem) {
-        // If item exists, increment the quantity
+        // Increment quantity if item exists
         const { error: updateError } = await supabase
           .from('carts')
           .update({ quantity: existingItem.quantity + 1 })
@@ -173,24 +121,49 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   
         if (updateError) {
           console.error('Error updating cart item quantity:', updateError);
+        } else {
+          setCart((prevCart) => ({
+            ...prevCart,
+            [cartKey]: prevCart[cartKey].map((cartItem) =>
+              cartItem.id === existingItem.id
+                ? { ...cartItem, quantity: existingItem.quantity + 1 }
+                : cartItem
+            ),
+          }));
         }
       } else {
-        // If item doesn't exist, insert it into the cart
-        const { error: insertError } = await supabase.from('carts').insert({
-          menu_item_id: item.menu_item_id,
-          restaurant_id: restaurantId as string,
-          table_id: tableId as string,
-          quantity: 1, // Default quantity
-        });
+        // Add new item to cart if it doesn't exist
+        const { data: insertedData, error: insertError } = await supabase
+          .from('carts')
+          .insert({
+            menu_item_id: item.menu_item_id,
+            restaurant_id: restaurantId,
+            table_id: tableId,
+            quantity: 1,
+          })
+          .select(); // Return the inserted row
   
         if (insertError) {
           console.error('Error adding new item to cart:', insertError);
+        } else {
+          const newCartItem = {
+            id: insertedData[0].id,
+            menu_item_id: menuItemData.id,
+            name: menuItemData.name,
+            price: menuItemData.price,
+            quantity: 1,
+          };
+          setCart((prevCart) => ({
+            ...prevCart,
+            [cartKey]: [...(prevCart[cartKey] || []), newCartItem],
+          }));
         }
       }
     } catch (err) {
       console.error('Unexpected error in addToCart:', err);
     }
   };
+  
   
 
   const updateCartItemQuantity = async (menu_item_id: string, quantity: number) => {
@@ -203,6 +176,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
       if (error) {
         console.error('Error updating cart item quantity:', error);
+      } else {
+        setCart((prevCart) => ({
+          ...prevCart,
+          [cartKey]: prevCart[cartKey].map((cartItem) =>
+            cartItem.menu_item_id === menu_item_id ? { ...cartItem, quantity } : cartItem
+          ),
+        }));
       }
     } catch (err) {
       console.error('Unexpected error:', err);
@@ -213,6 +193,12 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     try {
       const { error } = await supabase.from('carts').delete().eq('id', id);
       if (error) console.error('Error removing from cart:', error);
+      else {
+        setCart((prevCart) => ({
+          ...prevCart,
+          [cartKey]: prevCart[cartKey].filter((cartItem) => cartItem.id !== id),
+        }));
+      }
     } catch (err) {
       console.error('Unexpected error:', err);
     }
@@ -220,8 +206,18 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   const clearCart = async () => {
     try {
-      const { error } = await supabase.from('carts').delete().eq('table_id', tableId);
+      const { error } = await supabase
+        .from('carts')
+        .delete()
+        .eq('table_id', tableId);
+
       if (error) console.error('Error clearing cart:', error);
+      else {
+        setCart((prevCart) => ({
+          ...prevCart,
+          [cartKey]: [],
+        }));
+      }
     } catch (err) {
       console.error('Unexpected error:', err);
     }
