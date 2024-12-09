@@ -156,7 +156,7 @@ const PaymentPage: React.FC = () => {
             ${item.price.toFixed(2)} x {item.quantity}
           </span>
           <span className="cart-item-total">
-            = ${(item.price * item.quantity).toFixed(2)}
+          &nbsp;= ${(item.price * item.quantity).toFixed(2)}
           </span>
         </div>
       </div>
@@ -191,147 +191,93 @@ const PaymentPage: React.FC = () => {
       </button>
     </div>
     <style jsx>{`
-  .container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    width: 90%; /* Adjust width for smaller devices */
-    max-width: 625px; /* Limit max width for larger screens */
-    margin: 40px auto;
-    background-color: #2a2a2a;
-    border: 1px solid #ffcc00;
-    border-radius: 8px;
-    padding: 20px;
-  }
-  .order-summary-heading {
-    text-align: center;
-    font-size: 24px; /* Adjust heading size */
-    margin-bottom: 20px;
-    color: #ffcc00;
-  }
-  .cart-items {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin-bottom: 20px;
-  }
-  .cart-item {
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap; /* Wrap content for smaller screens */
-    padding: 10px;
-    background-color: #333;
-    border: 1px solid #ffcc00;
-    border-radius: 5px;
-  }
-  .cart-item-name {
-    font-weight: bold;
-    color: #fff;
-    flex: 1; /* Adjust name size dynamically */
-    margin-bottom: 5px; /* Add spacing for smaller screens */
-  }
-  .cart-item-pricing {
-    display: flex;
-    justify-content: space-between;
-    width: 100%; /* Adjust for smaller screens */
-  }
-  .cart-item-breakdown {
-    color: #ffcc00;
-  }
-  .cart-item-total {
-    font-weight: bold;
-    color: #ffcc00;
-  }
-  .order-summary-totals {
-    margin-top: 20px;
-  }
-  .order-total-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 0;
-    border-top: 1px solid #444;
-    font-size: 14px; /* Adjust font size for smaller screens */
-  }
-  .order-total-item.total {
-    border-top: 2px solid #ffcc00;
-    font-weight: bold;
-  }
-  .order-total-label {
-    color: #ccc;
-  }
-  .order-total-value {
-    color: #ffcc00;
-  }
-  .button-container {
-    display: flex;
-    flex-direction: column; /* Stack buttons vertically on smaller screens */
-    gap: 10px;
-    margin-top: 20px;
-  }
-  .send-order-button,
-  .back-to-menu-button {
-    padding: 10px;
-    font-size: 16px;
-    font-weight: bold;
-    text-align: center;
-    color: #ffcc00;
-    background-color: #333;
-    border: 1px solid #ffcc00;
-    border-radius: 5px;
-    cursor: pointer;
-    width: 100%; /* Make buttons take full width on smaller screens */
-  }
-  .send-order-button:hover,
-  .back-to-menu-button:hover {
-    background-color: #444;
-  }
-  .send-order-button:disabled {
-    background-color: #555;
-    color: #777;
-    cursor: not-allowed;
-  }
-
-  /* Media Query for Smartphones */
-  @media (max-width: 768px) {
-    .order-summary-heading {
-      font-size: 20px;
-    }
-    .order-total-item {
-      font-size: 12px;
-    }
-    .cart-item {
-      padding: 8px;
-    }
-    .cart-item-name {
-      font-size: 14px;
-    }
-    .cart-item-pricing {
-      flex-direction: column; /* Stack price and total vertically */
-      align-items: flex-start;
-    }
-    .send-order-button,
-    .back-to-menu-button {
-      font-size: 14px;
-    }
-  }
-
-  /* Media Query for Extra Small Devices */
-  @media (max-width: 480px) {
-    .container {
-      padding: 15px;
-    }
-    .order-summary-heading {
-      font-size: 18px;
-    }
-    .cart-item-name {
-      font-size: 12px;
-    }
-    .cart-item-pricing {
-      font-size: 12px;
-    }
-  }
-`}</style>
-
+        .container {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          width: 90%;
+          max-width: 600px;
+          margin: 20px auto;
+          padding: 20px;
+          background-color: #2a2a2a;
+          border: 1px solid #ffcc00;
+          border-radius: 8px;
+        }
+        .order-summary-heading {
+          text-align: center;
+          font-size: 24px;
+          margin-bottom: 20px;
+          color: #ffcc00;
+        }
+        .cart-items {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .cart-item {
+          display: flex;
+          justify-content: space-between;
+          padding: 10px;
+          background-color: #333;
+          border: 1px solid #ffcc00;
+          border-radius: 5px;
+        }
+        .cart-item-name {
+          font-weight: bold;
+          color: #fff;
+          flex: 1;
+        }
+        .cart-item-pricing {
+          color: #ffcc00;
+          flex: 1;
+          text-align: right;
+        }
+        .order-summary-totals {
+          margin-top: 20px;
+        }
+        .order-total-item {
+          display: flex;
+          justify-content: space-between;
+          padding: 10px 0;
+        }
+        .order-total-item.total {
+          font-weight: bold;
+          border-top: 2px solid #ffcc00;
+        }
+        .button-container {
+          display: flex;
+          justify-content: space-between;
+          gap: 10px;
+        }
+        .send-order-button,
+        .back-to-menu-button {
+          flex: 1;
+          padding: 10px;
+          font-size: 16px;
+          font-weight: bold;
+          text-align: center;
+          color: #ffcc00;
+          background-color: #333;
+          border: 1px solid #ffcc00;
+          border-radius: 5px;
+          cursor: pointer;
+        }
+        .send-order-button:hover,
+        .back-to-menu-button:hover {
+          background-color: #444;
+        }
+        @media (max-width: 768px) {
+          .container {
+            padding: 10px;
+          }
+          .order-summary-heading {
+            font-size: 20px;
+          }
+          .cart-item {
+            font-size: 14px;
+          }
+        }
+      `}</style>
   </div>
   
   );
